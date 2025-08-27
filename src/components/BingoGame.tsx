@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import {useRef, useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -18,6 +18,14 @@ export default function BingoGame() {
   const [currentNumber, setCurrentNumber] = useState<number | null>(null);
   const [gameStarted, setGameStarted] = useState(false);
   const [availableNumbers, setAvailableNumbers] = useState<number[]>(generateCalledNumbers());
+  const audioRef = useRef<HTMLAudioElement>(null);
+
+  //FUNCION DE CANTAR EL NUMERO CON VOZ
+  const speakNumber = (number: number) => {
+    window.speechSynthesis.cancel();
+    const msg = new window.SpeechSynthesisUtterance(`El número cantado es ${number}`);
+    window.speechSynthesis.speak(msg);
+  };
 
   const callNextNumber = () => {
     if (availableNumbers.length === 0) return;
@@ -27,6 +35,12 @@ export default function BingoGame() {
     setCalledNumbers((prev) => [...prev, nextNumber]);
     setAvailableNumbers((prev) => prev.slice(1));
 
+    speakNumber(nextNumber);
+
+    if (availableNumbers.length - 1 === 20 || availableNumbers.length - 1 === 10) {
+      audioRef.current?.play();
+    }
+
     if (!gameStarted) setGameStarted(true);
   };
 
@@ -35,10 +49,13 @@ export default function BingoGame() {
     setCurrentNumber(null);
     setGameStarted(false);
     setAvailableNumbers(generateCalledNumbers());
+    audioRef.current?.pause();
+    audioRef.current!.currentTime = 0;
   };
 
   return (
     <div className="min-h-screen bg-background p-4">
+     <audio ref={audioRef} src="/musica-suspenso.mp3" preload="auto" />
       <div className="max-w-4xl mx-auto">
         {/* Header */}
         <div className="text-center mb-8">
@@ -75,7 +92,7 @@ export default function BingoGame() {
           </Button>
         </div>
 
-        <div className="max-w-2xl mx-auto">
+        <div className="max-w-3xl mx-auto w-full">
           <Card className="p-6">
             <div className="flex justify-between items-center mb-6">
               <h3 className="font-bold text-xl">Números Cantados</h3>
@@ -84,7 +101,7 @@ export default function BingoGame() {
               </Badge>
             </div>
 
-            <div className="grid grid-cols-10 gap-3">
+            <div className="grid grid-cols-11 gap-2">
               {Array.from({ length: 75 }, (_, i) => i + 1).map((number) => {
                 const isCalled = calledNumbers.includes(number)
                 const isCurrent = number === currentNumber
